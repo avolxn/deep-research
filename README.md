@@ -26,8 +26,8 @@ pip install poetry
 ### Установка с Poetry
 
 ```bash
-git clone https://github.com/avolxn/DeepResearch.git
-cd DeepResearch
+git clone https://github.com/avolxn/deep-research.git
+cd deep-research
 
 poetry install
 ```
