@@ -6,14 +6,14 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 
-from agent.prompts import (
+from deep_research.ml.prompts import (
     CLARIFY_WITH_USER_PROMPT,
     GENERATE_REPORT_PROMPT,
     WRITE_RESEARCH_BRIEF_PROMPT,
 )
-from agent.state import ClarifyWithUser, DeepResearchState
-from agent.supervisor_subgraph import supervisor_subgraph
-from agent.utils import llm
+from deep_research.ml.state import ClarifyWithUser, DeepResearchState
+from deep_research.ml.supervisor_subgraph import supervisor_subgraph
+from deep_research.ml.utils import llm
 
 
 async def clarify_with_user(state: DeepResearchState) -> Command[Literal["write_research_brief", "__end__"]]:

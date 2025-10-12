@@ -6,11 +6,11 @@ from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage, fi
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 
-from agent.prompts import SUPERVISOR_PROMPT
-from agent.researcher_subgraph import researcher_subgraph
-from agent.state import SupervisorState
-from agent.tools import conduct_research_tool, think_tool
-from agent.utils import llm
+from deep_research.ml.prompts import SUPERVISOR_PROMPT
+from deep_research.ml.researcher_subgraph import researcher_subgraph
+from deep_research.ml.state import SupervisorState
+from deep_research.ml.tools import conduct_research_tool, think_tool
+from deep_research.ml.utils import llm
 
 
 async def supervisor(state: SupervisorState) -> SupervisorState:

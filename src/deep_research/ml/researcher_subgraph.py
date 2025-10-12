@@ -4,10 +4,10 @@ from langchain_core.messages import SystemMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 
-from agent.prompts import COMPRESS_RESEARCH_SYSTEM_PROMPT, RESEARCH_SYSTEM_PROMPT
-from agent.state import ResearcherState
-from agent.tools import think_tool, web_search_tool
-from agent.utils import llm
+from deep_research.ml.prompts import COMPRESS_RESEARCH_SYSTEM_PROMPT, RESEARCH_SYSTEM_PROMPT
+from deep_research.ml.state import ResearcherState
+from deep_research.ml.tools import think_tool, web_search_tool
+from deep_research.ml.utils import llm
 
 
 async def researcher(state: ResearcherState) -> ResearcherState:

@@ -6,10 +6,10 @@ from langchain_core.messages import HumanMessage
 from langchain_core.tools import InjectedToolArg, tool
 from langchain_tavily import TavilySearch
 
-from agent.config import TAVILY_API_KEY
-from agent.prompts import SUMMARIZE_WEBPAGE_PROMPT
-from agent.state import WebSummary
-from agent.utils import llm
+from deep_research.config import settings
+from deep_research.ml.prompts import SUMMARIZE_WEBPAGE_PROMPT
+from deep_research.ml.state import WebSummary
+from deep_research.ml.utils import llm
 
 
 @tool
@@ -30,7 +30,7 @@ async def web_search_tool(
         str: Отформатированный ответ с результатами поиска
     """
     search_tool = TavilySearch(
-        tavily_api_key=TAVILY_API_KEY,
+        tavily_api_key=settings.AGENT.TAVILY_API_KEY,
         max_results=max_results,
         topic=topic,
         include_raw_content=True,

@@ -116,21 +116,39 @@
 ### Источники
 
 [1] Искусственный интеллект в медицине: методы применения ИИ с ... URL: [https://vc.ru/future/1030796-iskusstvennyi-intellekt-v-medicine-metody-primeneniya-ii-s-primerami-tehnologii-budushee-mediciny-zdravoohraneniya-2024](https://vc.ru/future/1030796-iskusstvennyi-intellekt-v-medicine-metody-primeneniya-ii-s-primerami-tehnologii-budushee-mediciny-zdravoohraneniya-2024)
+
 [2] Искусственный интеллект в здравоохранении - Яков и Партнёры URL: [https://yakovpartners.ru/publications/ai-healthcare/](https://yakovpartners.ru/publications/ai-healthcare/)
+
 [3] FutureMed 2024: «искусственный интеллект меняет медицину ... URL: [https://www.invitro.ru/moscow/about/press\_relizes/futuremed-2024-iskusstvennyy-intellekt-menyaet-meditsinu-uzhe-segodnya-no-v-tsentre-sistemy-vsegda-b/](https://www.invitro.ru/moscow/about/press_relizes/futuremed-2024-iskusstvennyy-intellekt-menyaet-meditsinu-uzhe-segodnya-no-v-tsentre-sistemy-vsegda-b/)
+
 [4] Применение искусственного интеллекта в медицине: правовые ... URL: [https://cyberleninka.ru/article/n/primenenie-iskusstvennogo-intellekta-v-meditsine-pravovye-riski-i-perspektivy](https://cyberleninka.ru/article/n/primenenie-iskusstvennogo-intellekta-v-meditsine-pravovye-riski-i-perspektivy)
+
 [5] \[PDF] УПРАВЛЕНИЕ ИСКУССТВЕННЫМ ИНТЕЛЛЕКТОМ В ... URL: [https://www.un.org/sites/un2.un.org/files/governing\_ai\_for\_humanity\_final\_report\_ru.pdf](https://www.un.org/sites/un2.un.org/files/governing_ai_for_humanity_final_report_ru.pdf)
+
 [6] Правовые проблемы применения искусственного интеллекта в ... URL: [https://cyberleninka.ru/article/n/pravovye-problemy-primeneniya-iskusstvennogo-intellekta-v-sfere-zdravoohraneniya](https://cyberleninka.ru/article/n/pravovye-problemy-primeneniya-iskusstvennogo-intellekta-v-sfere-zdravoohraneniya)
+
 [7] Искусственный интеллект в медицине: проблемы ... URL: [https://cyberleninka.ru/article/n/iskusstvennyy-intellekt-v-meditsine-problemy-kiberbezopasnosti-i-eticheskie-aspekty](https://cyberleninka.ru/article/n/iskusstvennyy-intellekt-v-meditsine-problemy-kiberbezopasnosti-i-eticheskie-aspekty)
+
 [8] Применение ИИ в здравоохранении: законы, стандарты ... URL: [https://cdto.ranepa.ru/sum-of-tech/materials/134](https://cdto.ranepa.ru/sum-of-tech/materials/134)
+
 [9] Заменит ли ​ИИ ​врачей и как его уже используют в ... URL: [https://t-j.ru/ai-in-medicine/](https://t-j.ru/ai-in-medicine/)
+
 [10] ИИ в здравоохранении: Области применения в 2024 году URL: [https://allsee.team/ii-v-zdravookhranenii-oblasti-primeneniya-v-2024-godu](https://allsee.team/ii-v-zdravookhranenii-oblasti-primeneniya-v-2024-godu)
+
 [11] Тенденции ИИ в здравоохранении в 2024 году URL: [https://firstignite.com/ru/%D0%A2%D0%B5%D0%BD%D0%B4%D0%B5%D0%BD%D1%86%D0%B8%D0%B8-%D0%B8%D1%81%D0%BA%D1%83%D1%81%D1%81%D1%82%D0%B2%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE-%D0%B8%D0%BD%D1%82%D0%B5%D0%BB%D0%BB%D0%B5%D0%BA%D1%82%D0%B0-%D0%B2-%D0%B7%D0%B4%D1%80%D0%B0%D0%B2%D0%BE%D0%BE%D1%85%D1%80%D0%B0%D0%BD%D0%B5%D0%BD%D0%B8%D0%B8-%D0%B2-2024-%D0%B3%D0%BE%D0%B4%D1%83/](https://firstignite.com/ru/%D0%A2%D0%B5%D0%BD%D0%B4%D0%B5%D0%BD%D1%86%D0%B8%D0%B8-%D0%B8%D1%81%D0%BA%D1%83%D1%81%D1%81%D1%82%D0%B2%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE-%D0%B8%D0%BD%D1%82%D0%B5%D0%BB%D0%BB%D0%B5%D0%BA%D1%82%D0%B0-%D0%B2-%D0%B7%D0%B4%D1%80%D0%B0%D0%B2%D0%BE%D0%BE%D1%85%D1%80%D0%B0%D0%BD%D0%B5%D0%BD%D0%B8%D0%B8-%D0%B2-2024-%D0%B3%D0%BE%D0%B4%D1%83/)
+
 [12] ИИ в клинических исследованиях и поиске лекарств URL: [https://www.ultralytics.com/ru/blog/ai-role-in-clinical-research-and-drug-discovery](https://www.ultralytics.com/ru/blog/ai-role-in-clinical-research-and-drug-discovery)
+
 [13] Искусственный интеллект в медицине: обзор текущей ситуации ... URL: [https://medbio.cifra.science/archive/2-2-2024-september/10.60797/BMED.2024.2.4](https://medbio.cifra.science/archive/2-2-2024-september/10.60797/BMED.2024.2.4)
+
 [14] Нужен ли искусственный интеллект системе здравоохранения? URL: [https://www.mediasphera.ru/issues/meditsinskie-tekhnologii-otsenka-i-vybor/2024/4/1221906782024041040](https://www.mediasphera.ru/issues/meditsinskie-tekhnologii-otsenka-i-vybor/2024/4/1221906782024041040)
+
 [15] РОЛЬ ИСКУССТВЕННОГО ИНТЕЛЛЕКТА В МЕДИЦИНЕ URL: [https://journal.oshsu.kg/index.php/medicine/article/view/1715](https://journal.oshsu.kg/index.php/medicine/article/view/1715)
+
 [16] ИСКУССТВЕННЫЙ ИНТЕЛЛЕКТ В МЕДИЦИНЕ Текст научной ... URL: [https://cyberleninka.ru/article/n/iskusstvennyy-intellekt-v-meditsine-7](https://cyberleninka.ru/article/n/iskusstvennyy-intellekt-v-meditsine-7)
+
 [17] Искусственный интеллект в медицине: перспективы, риски и ... URL: [https://globalcio.ru/discussion/49298/](https://globalcio.ru/discussion/49298/)
+
 [18] ВОЗ выпустила руководство по этике и управлению ИИ ... URL: [https://news.un.org/ru/story/2024/01/1448712](https://news.un.org/ru/story/2024/01/1448712)
+
 [19] Artificial Intelligence-Enabled Medical Devices URL: [https://www.fda.gov/medical-devices/software-medical-device-samd/artificial-intelligence-enabled-medical-devices](https://www.fda.gov/medical-devices/software-medical-device-samd/artificial-intelligence-enabled-medical-devices)
