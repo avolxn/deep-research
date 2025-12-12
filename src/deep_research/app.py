@@ -3,21 +3,21 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from deep_research.backend.database import init_db
-from deep_research.backend.router import router
-from deep_research.config import settings
+from deep_research.database import close_db, init_db
+from deep_research.router import router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
     yield
+    await close_db()
 
 
 app = FastAPI(
-    title=settings.API.TITLE,
-    description=settings.API.DESCRIPTION,
-    version=settings.API.VERSION,
+    title="Deep Research API",
+    description="API для глубокого исследования",
+    version="1.0.0",
     lifespan=lifespan,
 )
 
