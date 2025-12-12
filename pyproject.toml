@@ -31,7 +31,7 @@ pre-commit = "^3.8.0"
 line-length = 120
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "C", "UP"]
+select = ["E", "W", "F", "I", "UP"]
 ignore = ["E501", "E741"]
 
 [build-system]

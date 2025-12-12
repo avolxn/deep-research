@@ -62,8 +62,6 @@ class DeepResearchService:
             data={"status": ResearchStatus.IN_PROGRESS, "message": "Начинаем исследование..."},
         )
 
-        final_state = None
-
         try:
             logger.info(f"Starting research stream for session {session_id}")
             async for namespace, chunk in self.deep_research_agent.astream(
