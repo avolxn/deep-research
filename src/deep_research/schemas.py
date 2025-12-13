@@ -1,5 +1,3 @@
-from enum import StrEnum
-
 from pydantic import BaseModel
 
 from deep_research.models import ResearchStatus
@@ -25,22 +23,3 @@ class ResearchSessionResponse(BaseModel):
     messages: list[dict[str, str]]
     research_task: str | None = None
     final_report: str | None = None
-
-
-class StreamEventType(StrEnum):
-    """Типы событий стриминга."""
-
-    STATUS = "status"
-    RESEARCH_TOPIC = "research_topic"
-    RESEARCH_RESULT = "research_result"
-    CLARIFICATION = "clarification"
-    REPORT = "report"
-    ERROR = "error"
-    DONE = "done"
-
-
-class StreamEvent(BaseModel):
-    """Событие стриминга исследования."""
-
-    event: StreamEventType
-    data: dict
