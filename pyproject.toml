@@ -8,12 +8,8 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.11,<4.0.0"
 dependencies = [
-    "fastapi (>=0.118.0,<0.119.0)",
-    "uvicorn[standard] (>=0.37.0,<0.38.0)",
     "langgraph (>=0.6.8,<0.7.0)",
     "pydantic-settings (>=2.11.0,<3.0.0)",
-    "asyncpg (>=0.30.0,<0.31.0)",
-    "sqlalchemy[asyncio] (>=2.0.44,<3.0.0)",
     "langchain-openai (>=1.1.1,<2.0.0)",
     "tavily-python (>=0.7.14,<0.8.0)",
 ]
