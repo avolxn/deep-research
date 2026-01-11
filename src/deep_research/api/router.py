@@ -6,7 +6,6 @@ import logging
 import time
 import uuid
 from asyncio import Queue
-from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from sse_starlette.sse import EventSourceResponse
@@ -46,31 +45,31 @@ async def create_research(
 
     thread_id = request.thread_id or str(uuid.uuid4())
 
-    if request.streaming:
-        queue: Queue[dict[str, Any] | None] = Queue()
-        await ResearchService.register_stream(thread_id, queue)
-
-        background_tasks.add_task(
-            ResearchService.conduct_research,
-            query=request.query,
-            thread_id=thread_id,
-            queue=queue,
-        )
-
-        return StreamResponse(
-            stream_url=f"/api/research/stream/{thread_id}",
-            message="Исследование запущено. Подключитесь к stream_url для получения обновлений.",
-            thread_id=thread_id,
-        )
-
-    # Синхронное выполнение
     try:
-        result = await ResearchService.conduct_research(
-            query=request.query,
-            thread_id=thread_id,
-            queue=None,
-        )
-        return result
+        if request.streaming:
+            queue = Queue()
+            await ResearchService.register_stream(thread_id, queue)
+
+            background_tasks.add_task(
+                ResearchService.conduct_research,
+                query=request.query,
+                thread_id=thread_id,
+                queue=queue,
+            )
+
+            return StreamResponse(
+                stream_url=f"/api/research/stream/{thread_id}",
+                message="Исследование запущено. Подключитесь к stream_url для получения обновлений.",
+                thread_id=thread_id,
+            )
+        else:
+            result = await ResearchService.conduct_research(
+                query=request.query,
+                thread_id=thread_id,
+                queue=None,
+            )
+            return result
+
     except Exception as e:
         logger.exception(f"Ошибка исследования: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -94,7 +93,6 @@ async def stream_research(thread_id: str, request: Request) -> EventSourceRespon
         last_heartbeat = time.time()
 
         try:
-            # Отправляем событие подключения
             yield {
                 "event": "connected",
                 "data": json.dumps({"event_type": "connected", "data": {"thread_id": thread_id}}),
@@ -111,7 +109,6 @@ async def stream_research(thread_id: str, request: Request) -> EventSourceRespon
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=max(0.1, timeout))
 
-                    # None — сигнал завершения
                     if event is None:
                         logger.info(f"Поток {thread_id} завершён")
                         yield {
@@ -119,9 +116,12 @@ async def stream_research(thread_id: str, request: Request) -> EventSourceRespon
                             "data": json.dumps({"event_type": "complete", "data": {}}),
                         }
                         break
-
-                    event_type = event.get("event_type", "update")
-                    yield {"event": event_type, "data": json.dumps(event)}
+                    else:
+                        event_type = event.get("event_type", "update")
+                        yield {
+                            "event": event_type,
+                            "data": json.dumps(event),
+                        }
 
                 except TimeoutError:
                     if time.time() - last_heartbeat >= heartbeat_interval:
@@ -187,4 +187,7 @@ async def stop_research(thread_id: str) -> dict[str, str]:
 )
 async def health_check() -> dict[str, str]:
     """Проверка здоровья API."""
-    return {"status": "healthy", "service": "deep-research"}
+    return {
+        "status": "healthy",
+        "service": "deep-research",
+    }
