@@ -6,15 +6,15 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 
-from deep_research.agent.config import config
-from deep_research.agent.prompts import (
+from deep_research.ml.config import config
+from deep_research.ml.prompts import (
     CLARIFY_WITH_USER_PROMPT,
     GENERATE_REPORT_PROMPT,
     WRITE_RESEARCH_TASK_PROMPT,
 )
-from deep_research.agent.state import ClarifyWithUser, DeepResearchState, ResearchQuestion
-from deep_research.agent.supervisor_subgraph import supervisor_subgraph
-from deep_research.agent.utils import get_llm
+from deep_research.ml.state import ClarifyWithUser, DeepResearchState, ResearchQuestion
+from deep_research.ml.supervisor_subgraph import supervisor_subgraph
+from deep_research.ml.utils import get_llm
 
 
 async def clarify_with_user(state: DeepResearchState) -> Command[Literal["write_research_task", "__end__"]]:
@@ -43,11 +43,7 @@ async def clarify_with_user(state: DeepResearchState) -> Command[Literal["write_
 
 
 async def write_research_task(state: DeepResearchState) -> Command[Literal["research_supervisor"]]:
-    """Преобразует сообщения пользователя в структурированное исследовательское задание и инициализирует супервизора.
-
-    Эта функция анализирует сообщения пользователя и генерирует детальное исследовательское задание,
-    которое будет направлять супервизора исследования.
-    """
+    """Преобразует сообщения пользователя в структурированное исследовательское задание."""
     messages = state["messages"]
 
     prompt = WRITE_RESEARCH_TASK_PROMPT.format(

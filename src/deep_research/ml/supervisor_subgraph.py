@@ -6,12 +6,12 @@ from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage, fi
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 
-from deep_research.agent.config import config
-from deep_research.agent.prompts import SUPERVISOR_PROMPT
-from deep_research.agent.researcher_subgraph import researcher_subgraph
-from deep_research.agent.state import SupervisorState
-from deep_research.agent.tools import conduct_research_tool, research_complete_tool, think_tool
-from deep_research.agent.utils import get_llm
+from deep_research.ml.config import config
+from deep_research.ml.prompts import SUPERVISOR_PROMPT
+from deep_research.ml.researcher_subgraph import researcher_subgraph
+from deep_research.ml.state import SupervisorState
+from deep_research.ml.tools import conduct_research_tool, research_complete_tool, think_tool
+from deep_research.ml.utils import get_llm
 
 SUPERVISOR_TOOLS = [think_tool, conduct_research_tool, research_complete_tool]
 
@@ -41,7 +41,7 @@ async def supervisor(state: SupervisorState) -> Command[Literal["supervisor_tool
 
 
 async def supervisor_tools(state: SupervisorState) -> Command[Literal["supervisor", "__end__"]]:
-    """Выполняет инструменты, вызванные супервизором, включая делегирование исследования и стратегическое мышление."""
+    """Выполняет инструменты, вызванные супервизором."""
     supervisor_messages = state.get("supervisor_messages", [])
     research_iterations = state.get("research_iterations", 0)
     last_message = supervisor_messages[-1]
@@ -99,7 +99,7 @@ async def supervisor_tools(state: SupervisorState) -> Command[Literal["superviso
         for tool_call in overflow_conduct_research_calls:
             all_tool_messages.append(
                 ToolMessage(
-                    content=f"Ошибка: Это исследование не было выполнено, так как превышено максимальное количество параллельных исследовательских единиц. Попробуйте снова с {config.MAX_CONCURRENT_RESEARCH_UNITS} или меньше единицами.",
+                    content=f"Ошибка: Превышено максимальное количество параллельных исследовательских единиц ({config.MAX_CONCURRENT_RESEARCH_UNITS}).",
                     name="conduct_research_tool",
                     tool_call_id=tool_call["id"],
                 )
@@ -110,14 +110,12 @@ async def supervisor_tools(state: SupervisorState) -> Command[Literal["superviso
         tool_message = research_complete_tool.invoke(tool_call)
         all_tool_messages.append(tool_message)
 
-    update_payload = {
-        "supervisor_messages": all_tool_messages,
-        "raw_notes": all_raw_notes,
-    }
-
     return Command(
         goto="supervisor",
-        update=update_payload,
+        update={
+            "supervisor_messages": all_tool_messages,
+            "raw_notes": all_raw_notes,
+        },
     )
 
 

@@ -1,19 +1,16 @@
 from datetime import datetime
 from typing import Literal
 
-from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
-from langgraph.graph import END, START, StateGraph
+from langchain_core.messages import SystemMessage, ToolMessage
 from langgraph.types import Command
 
-from deep_research.agent.config import config
-from deep_research.agent.prompts import (
-    COMPRESS_RESEARCH_HUMAN_MESSAGE,
-    COMPRESS_RESEARCH_SYSTEM_PROMPT,
+from deep_research.ml.config import config
+from deep_research.ml.prompts import (
     RESEARCH_SYSTEM_PROMPT,
 )
-from deep_research.agent.state import ResearcherOutputState, ResearcherState
-from deep_research.agent.tools import research_complete_tool, think_tool, web_search_tool
-from deep_research.agent.utils import get_llm
+from deep_research.ml.state import ResearcherState
+from deep_research.ml.tools import research_complete_tool, think_tool, web_search_tool
+from deep_research.ml.utils import get_llm
 
 RESEARCHER_TOOLS = [web_search_tool, think_tool, research_complete_tool]
 
