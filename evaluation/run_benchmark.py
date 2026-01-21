@@ -34,7 +34,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-from utils.io_utils import load_jsonl
+from utils.io_utils import load_jsonl  # noqa
 
 
 async def run_single_research(query: str, query_id: int) -> dict[str, Any]:
