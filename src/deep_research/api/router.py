@@ -1,193 +1,246 @@
-"""API routes for Deep Research."""
+"""API router for deep research endpoints."""
 
 import asyncio
+import datetime
 import json
 import logging
 import time
-import uuid
-from asyncio import Queue
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from sse_starlette.sse import EventSourceResponse
 
 from deep_research.api.schemas import (
-    ErrorResponse,
+    MessageRequest,
+    MessageResponse,
     ResearchRequest,
     ResearchResponse,
-    ResearchStatus,
-    StreamResponse,
 )
 from deep_research.api.service import ResearchService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/research", tags=["Research"])
+router = APIRouter(tags=["Research"])
 
 
-@router.post(
-    "",
-    response_model=ResearchResponse | StreamResponse,
-    responses={500: {"model": ErrorResponse}},
-    summary="Запустить исследование",
-    description="Запускает глубокое исследование по заданной теме",
-)
-async def create_research(
-    request: ResearchRequest,
-    background_tasks: BackgroundTasks,
-) -> ResearchResponse | StreamResponse:
+@router.post("/research", response_model=ResearchResponse)
+async def start_research(request: ResearchRequest, background_tasks: BackgroundTasks) -> ResearchResponse:
+    """Start a new research session.
+
+    Returns a session_id and stream_url. Connect to the stream_url to receive real-time updates.
     """
-    Запустить исследование по теме.
+    logger.info(f"Starting research: {request.query[:100]}")
 
-    При streaming=True возвращает URL для подключения к потоку событий.
-    При streaming=False выполняет исследование синхронно и возвращает результат.
-    """
-    logger.info(f"Получен запрос на исследование: {request.query[:50]}...")
+    session = ResearchService.create_session(request.query)
 
-    thread_id = request.thread_id or str(uuid.uuid4())
+    background_tasks.add_task(ResearchService.start_research, session)
 
-    try:
-        if request.streaming:
-            queue = Queue()
-            await ResearchService.register_stream(thread_id, queue)
-
-            background_tasks.add_task(
-                ResearchService.conduct_research,
-                query=request.query,
-                thread_id=thread_id,
-                queue=queue,
-            )
-
-            return StreamResponse(
-                stream_url=f"/api/research/stream/{thread_id}",
-                message="Исследование запущено. Подключитесь к stream_url для получения обновлений.",
-                thread_id=thread_id,
-            )
-        else:
-            result = await ResearchService.conduct_research(
-                query=request.query,
-                thread_id=thread_id,
-                queue=None,
-            )
-            return result
-
-    except Exception as e:
-        logger.exception(f"Ошибка исследования: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    return ResearchResponse(
+        session_id=session.session_id,
+        stream_url=f"/stream/{session.session_id}",
+        message="Research started. Connect to stream_url for updates.",
+    )
 
 
-@router.get(
-    "/stream/{thread_id}",
-    summary="Поток событий исследования",
-    description="SSE endpoint для получения событий исследования в реальном времени",
-)
-async def stream_research(thread_id: str, request: Request) -> EventSourceResponse:
-    """Поток событий исследования через Server-Sent Events."""
-    logger.info(f"Подключение к потоку {thread_id}")
+@router.get("/stream/{session_id}")
+async def stream_research(session_id: str, request: Request) -> EventSourceResponse:
+    """Stream research updates via Server-Sent Events."""
+    logger.info(f"Client connecting to session {session_id}")
 
-    queue = await ResearchService.get_stream(thread_id)
-    if not queue:
-        raise HTTPException(status_code=404, detail=f"Поток {thread_id} не найден")
+    session = ResearchService.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
 
     async def event_generator():
-        heartbeat_interval = 5.0
+        logger.info(f"Stream started for {session_id}")
         last_heartbeat = time.time()
+        heartbeat_interval = 5.0
 
         try:
             yield {
                 "event": "connected",
-                "data": json.dumps({"event_type": "connected", "data": {"thread_id": thread_id}}),
+                "data": json.dumps(
+                    {
+                        "event_type": "connected",
+                        "data": {
+                            "session_id": session_id,
+                            "timestamp": datetime.datetime.now().isoformat(),
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
             }
 
             while True:
                 if await request.is_disconnected():
-                    logger.info(f"Клиент отключился от потока {thread_id}")
+                    logger.info(f"Client disconnected from {session_id}")
                     break
 
                 current_time = time.time()
-                timeout = min(heartbeat_interval, heartbeat_interval - (current_time - last_heartbeat))
+                timeout = max(0.1, heartbeat_interval - (current_time - last_heartbeat))
 
                 try:
-                    event = await asyncio.wait_for(queue.get(), timeout=max(0.1, timeout))
+                    event = await asyncio.wait_for(session.queue.get(), timeout=timeout)
 
                     if event is None:
-                        logger.info(f"Поток {thread_id} завершён")
-                        yield {
-                            "event": "complete",
-                            "data": json.dumps({"event_type": "complete", "data": {}}),
-                        }
+                        logger.info(f"Stream ended for {session_id}")
                         break
-                    else:
-                        event_type = event.get("event_type", "update")
-                        yield {
-                            "event": event_type,
-                            "data": json.dumps(event),
-                        }
+
+                    event_type = event.get("event_type", "update")
+                    yield {
+                        "event": event_type,
+                        "data": json.dumps(event, ensure_ascii=False),
+                    }
+                    last_heartbeat = time.time()
 
                 except TimeoutError:
                     if time.time() - last_heartbeat >= heartbeat_interval:
                         yield {
                             "event": "heartbeat",
-                            "data": json.dumps({"event_type": "heartbeat", "data": {}}),
+                            "data": json.dumps(
+                                {
+                                    "event_type": "heartbeat",
+                                    "data": {"timestamp": datetime.datetime.now().isoformat()},
+                                },
+                                ensure_ascii=False,
+                            ),
                         }
                         last_heartbeat = time.time()
 
-        except asyncio.CancelledError:
-            logger.info(f"Генератор событий {thread_id} отменён")
         except Exception as e:
-            logger.exception(f"Ошибка в генераторе событий {thread_id}: {e}")
+            logger.error(f"Error in stream {session_id}: {e}", exc_info=True)
             yield {
                 "event": "error",
-                "data": json.dumps({"event_type": "error", "data": {"error": str(e)}}),
+                "data": json.dumps(
+                    {
+                        "event_type": "error",
+                        "data": {"error": str(e)},
+                    },
+                    ensure_ascii=False,
+                ),
             }
         finally:
-            await ResearchService.cleanup_stream(thread_id)
+            logger.info(f"Stream closed for {session_id}")
 
     return EventSourceResponse(event_generator())
 
 
-@router.get(
-    "/status/{thread_id}",
-    response_model=ResearchStatus,
-    responses={404: {"model": ErrorResponse}},
-    summary="Статус исследования",
-    description="Получить текущий статус исследования",
-)
-async def get_research_status(thread_id: str) -> ResearchStatus:
-    """Получить статус исследования по thread_id."""
-    status = await ResearchService.get_status(thread_id)
-    if not status:
-        raise HTTPException(status_code=404, detail=f"Исследование {thread_id} не найдено")
-    return status
+@router.post("/message", response_model=MessageResponse)
+async def send_message(request: MessageRequest, background_tasks: BackgroundTasks) -> MessageResponse:
+    """Send a message to an active research session.
+
+    This handles:
+    - Clarification answers: When the agent asks questions, send your answer here
+    - Steering messages: Guide ongoing research in real-time
+    """
+    logger.info(f"Message received for session {request.session_id}")
+
+    session = ResearchService.get_session(request.session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session {request.session_id} not found")
+
+    background_tasks.add_task(ResearchService.continue_research, session, request.message)
+
+    return MessageResponse(
+        success=True,
+        message="Message received. Research continuing.",
+    )
 
 
-@router.post(
-    "/stop/{thread_id}",
-    summary="Остановить исследование",
-    description="Запросить остановку активного исследования",
-)
-async def stop_research(thread_id: str) -> dict[str, str]:
-    """Остановить активное исследование."""
-    logger.info(f"Запрос на остановку исследования {thread_id}")
+@router.post("/cancel/{session_id}")
+async def cancel_research(session_id: str) -> dict:
+    """Cancel an active research session."""
+    logger.info(f"Cancel requested for {session_id}")
 
-    success = await ResearchService.request_cancellation(thread_id)
-    if not success:
-        raise HTTPException(status_code=404, detail=f"Исследование {thread_id} не найдено")
+    session = ResearchService.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+    session.is_active = False
+    await session.send_event("research_cancelled", {"message": "Research cancelled by user"})
 
     return {
-        "status": "cancellation_requested",
-        "thread_id": thread_id,
-        "message": "Запрос на остановку отправлен",
+        "success": True,
+        "message": f"Session {session_id} cancelled",
     }
 
 
-@router.get(
-    "/health",
-    summary="Проверка здоровья API",
-    description="Проверить работоспособность API исследований",
-)
-async def health_check() -> dict[str, str]:
-    """Проверка здоровья API."""
+@router.get("/sessions")
+async def list_sessions() -> dict:
+    """List all active research sessions."""
+    sessions = []
+    for session_id, session in ResearchService._sessions.items():
+        sessions.append(
+            {
+                "session_id": session_id,
+                "query": session.query,
+                "is_active": session.is_active,
+            }
+        )
+
     return {
-        "status": "healthy",
-        "service": "deep-research",
+        "sessions": sessions,
+        "total": len(sessions),
+    }
+
+
+@router.get("/plan/{session_id}")
+async def get_research_plan(session_id: str) -> dict:
+    """Get the current research plan (TODO list) for a session."""
+    session = ResearchService.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+    if not session.todo_manager:
+        return {
+            "session_id": session_id,
+            "plan": "# Research Plan\n\nPlan not yet created. Waiting for research brief...",
+            "has_plan": False,
+        }
+
+    plan_markdown = session.todo_manager.get_todo_md()
+
+    return {
+        "session_id": session_id,
+        "plan": plan_markdown,
+        "has_plan": True,
+    }
+
+
+@router.get("/status/{session_id}")
+async def get_research_status(session_id: str) -> dict:
+    """Get detailed status of a research session."""
+    session = ResearchService.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+    if not session.todo_manager:
+        return {
+            "session_id": session_id,
+            "is_active": session.is_active,
+            "has_plan": False,
+            "pending_tasks": 0,
+            "completed_tasks": 0,
+            "research_iterations": 0,
+        }
+
+    pending = session.todo_manager.get_pending_tasks()
+    completed = session.todo_manager.get_completed_tasks()
+
+    return {
+        "session_id": session_id,
+        "is_active": session.is_active,
+        "has_plan": True,
+        "research_topic": session.todo_manager.research_topic,
+        "pending_tasks": len(pending),
+        "completed_tasks": len(completed),
+        "research_iterations": session.todo_manager.research_loop_count,
+        "pending_task_list": [
+            {
+                "id": task.id,
+                "description": task.description,
+                "priority": task.priority,
+                "status": task.status.name,
+            }
+            for task in pending[:10]
+        ],
     }

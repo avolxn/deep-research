@@ -1,23 +1,22 @@
-"""Deep Research API module."""
+"""Deep Research API package."""
 
 from deep_research.api.app import app
+from deep_research.api.router import router
 from deep_research.api.schemas import (
-    ErrorResponse,
-    ResearchEvent,
+    MessageRequest,
+    MessageResponse,
     ResearchRequest,
     ResearchResponse,
-    ResearchStatus,
-    StreamResponse,
 )
-from deep_research.api.service import ResearchService
+from deep_research.api.service import ResearchService, ResearchSession
 
 __all__ = [
     "app",
-    "ResearchService",
+    "router",
     "ResearchRequest",
     "ResearchResponse",
-    "ResearchEvent",
-    "ResearchStatus",
-    "StreamResponse",
-    "ErrorResponse",
+    "MessageRequest",
+    "MessageResponse",
+    "ResearchService",
+    "ResearchSession",
 ]

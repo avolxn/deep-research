@@ -1,265 +1,232 @@
-"""Research service — бизнес-логика исследований."""
+"""Research service for conducting deep research."""
 
-import asyncio
 import logging
-import time
+import uuid
 from asyncio import Queue
-from typing import Any
 
 from langchain_core.messages import HumanMessage
 
-from deep_research.api.schemas import ResearchResponse, ResearchStatus
 from deep_research.ml.graph import deep_research_agent
 
 logger = logging.getLogger(__name__)
 
 
-class EventBuffer:
-    """
-    Буфер для обработки и фильтрации событий LangGraph.
+class ResearchSession:
+    """Represents an active research session."""
 
-    Преобразует низкоуровневые события графа в высокоуровневые
-    обновления состояния для фронтенда.
-    """
+    def __init__(self, session_id: str, query: str):
+        self.session_id = session_id
+        self.query = query
+        self.queue = Queue()
+        self.thread_config = {"configurable": {"thread_id": session_id}}
+        self.is_active = True
+        self.todo_manager = None
 
-    def __init__(self, thread_id: str):
-        self.thread_id = thread_id
-        self.current_node: str | None = None
-        self.last_heartbeat = time.time()
-        self.events: list[dict[str, Any]] = []
+    async def send_event(self, event_type: str, data: dict):
+        """Send an event to the stream."""
+        await self.queue.put({"event_type": event_type, "data": data})
 
-    def process_event(self, event: dict[str, Any]) -> dict[str, Any] | None:
-        """
-        Обработать событие LangGraph и вернуть событие для клиента.
-
-        Returns:
-            Событие для отправки клиенту или None если событие нужно пропустить.
-        """
-        # Обработка событий узлов
-        if "langgraph_node" in event.get("metadata", {}):
-            node_name = event["metadata"]["langgraph_node"]
-
-            if node_name != self.current_node:
-                self.current_node = node_name
-                return {
-                    "event_type": "node_start",
-                    "data": {
-                        "node": node_name,
-                        "message": self._get_node_message(node_name),
-                    },
-                }
-
-        # Обработка сообщений
-        if "messages" in event:
-            messages = event.get("messages", [])
-            if messages:
-                last_message = messages[-1]
-                if hasattr(last_message, "content") and last_message.content:
-                    return {
-                        "event_type": "message",
-                        "data": {
-                            "content": last_message.content,
-                            "role": getattr(last_message, "type", "unknown"),
-                        },
-                    }
-
-        # Обработка финального отчёта
-        if "final_report" in event and event["final_report"]:
-            return {
-                "event_type": "report_ready",
-                "data": {"report_length": len(event["final_report"])},
-            }
-
-        return None
-
-    def _get_node_message(self, node_name: str) -> str:
-        """Получить человекочитаемое сообщение для узла."""
-        messages = {
-            "clarify_with_user": "Анализ запроса...",
-            "write_research_task": "Формирование исследовательского задания...",
-            "research_supervisor": "Координация исследования...",
-            "researcher": "Проведение исследования...",
-            "generate_report": "Генерация отчёта...",
-        }
-        return messages.get(node_name, f"Выполнение: {node_name}")
-
-    def check_heartbeat(self) -> dict[str, Any] | None:
-        """Проверить необходимость отправки heartbeat."""
-        if time.time() - self.last_heartbeat > 5.0:
-            self.last_heartbeat = time.time()
-            return {"event_type": "heartbeat", "data": {}}
-        return None
+    async def close(self):
+        """Close the session."""
+        self.is_active = False
+        await self.queue.put(None)
 
 
 class ResearchService:
-    """Сервис для проведения исследований."""
+    """Service for managing research sessions."""
 
-    _streams: dict[str, Queue[dict[str, Any] | None]] = {}
-    _statuses: dict[str, ResearchStatus] = {}
-    _cancellation_flags: dict[str, bool] = {}
-    _lock = asyncio.Lock()
+    _sessions: dict[str, ResearchSession] = {}
 
     @classmethod
-    async def register_stream(cls, thread_id: str, queue: Queue[dict[str, Any] | None]) -> None:
-        """Зарегистрировать поток для исследования."""
-        async with cls._lock:
-            cls._streams[thread_id] = queue
-            cls._statuses[thread_id] = ResearchStatus(
-                thread_id=thread_id,
-                status="pending",
-                progress=0.0,
-                current_stage="Инициализация",
-            )
-            cls._cancellation_flags[thread_id] = False
+    def create_session(cls, query: str) -> ResearchSession:
+        """Create a new research session."""
+        session_id = str(uuid.uuid4())
+        session = ResearchSession(session_id, query)
+        cls._sessions[session_id] = session
+        logger.info(f"Created session {session_id}")
+        return session
 
     @classmethod
-    async def get_stream(cls, thread_id: str) -> Queue[dict[str, Any] | None] | None:
-        """Получить очередь потока по ID."""
-        return cls._streams.get(thread_id)
+    def get_session(cls, session_id: str) -> ResearchSession | None:
+        """Get an existing session."""
+        return cls._sessions.get(session_id)
 
     @classmethod
-    async def cleanup_stream(cls, thread_id: str) -> None:
-        """Очистить ресурсы потока."""
-        async with cls._lock:
-            cls._streams.pop(thread_id, None)
-            cls._cancellation_flags.pop(thread_id, None)
+    def remove_session(cls, session_id: str):
+        """Remove a session."""
+        if session_id in cls._sessions:
+            del cls._sessions[session_id]
+            logger.info(f"Removed session {session_id}")
 
     @classmethod
-    async def get_status(cls, thread_id: str) -> ResearchStatus | None:
-        """Получить статус исследования."""
-        return cls._statuses.get(thread_id)
-
-    @classmethod
-    async def request_cancellation(cls, thread_id: str) -> bool:
-        """Запросить отмену исследования."""
-        async with cls._lock:
-            if thread_id in cls._cancellation_flags:
-                cls._cancellation_flags[thread_id] = True
-                return True
-            return False
-
-    @classmethod
-    async def _is_cancelled(cls, thread_id: str) -> bool:
-        """Проверить, запрошена ли отмена."""
-        return cls._cancellation_flags.get(thread_id, False)
-
-    @classmethod
-    async def _update_status(
-        cls,
-        thread_id: str,
-        status: str,
-        progress: float = 0.0,
-        current_stage: str | None = None,
-    ) -> None:
-        """Обновить статус исследования."""
-        async with cls._lock:
-            if thread_id in cls._statuses:
-                cls._statuses[thread_id] = ResearchStatus(
-                    thread_id=thread_id,
-                    status=status,
-                    progress=progress,
-                    current_stage=current_stage,
-                )
-
-    @classmethod
-    async def conduct_research(
-        cls,
-        query: str,
-        thread_id: str,
-        queue: Queue[dict[str, Any] | None] | None = None,
-    ) -> ResearchResponse:
-        """
-        Провести исследование по заданной теме.
-
-        Args:
-            query: Тема исследования
-            thread_id: ID потока
-            queue: Очередь для отправки событий (для streaming)
-
-        Returns:
-            ResearchResponse с результатами исследования
-        """
-        logger.info(f"Начало исследования [{thread_id}]: {query[:50]}...")
-        event_buffer = EventBuffer(thread_id)
-
-        await cls._update_status(thread_id, "running", 0.1, "Запуск исследования")
-
-        async def emit_event(event: dict[str, Any]) -> None:
-            if queue:
-                await queue.put(event)
-
+    async def start_research(cls, session: ResearchSession):
+        """Start research for a session."""
+        should_close = True
         try:
-            config = {"configurable": {"thread_id": thread_id}}
-            inputs = {"messages": [HumanMessage(content=query)]}
+            await session.send_event(
+                "research_started",
+                {
+                    "query": session.query,
+                    "session_id": session.session_id,
+                },
+            )
 
-            final_state = None
-
-            async for event in deep_research_agent.astream(inputs, config=config, stream_mode="values"):
-                if await cls._is_cancelled(thread_id):
-                    logger.info(f"Исследование {thread_id} отменено")
-                    await emit_event({"event_type": "cancelled", "data": {"message": "Исследование отменено"}})
+            async for chunk in deep_research_agent.astream(
+                {"messages": [HumanMessage(content=session.query)]},
+                config=session.thread_config,
+                stream_mode="updates",
+            ):
+                if not session.is_active:
+                    logger.info(f"Session {session.session_id} cancelled")
                     break
 
-                processed = event_buffer.process_event(event)
-                if processed:
-                    await emit_event(processed)
+                for node_name, state_update in chunk.items():
+                    await cls._handle_node_update(session, node_name, state_update)
 
-                heartbeat = event_buffer.check_heartbeat()
-                if heartbeat:
-                    await emit_event(heartbeat)
-
-                final_state = event
-
-            if final_state:
-                final_report = final_state.get("final_report", "")
-                research_task = final_state.get("research_task", "")
-                notes = final_state.get("notes", [])
-
-                await cls._update_status(thread_id, "completed", 1.0, "Завершено")
-
-                await emit_event(
-                    {
-                        "event_type": "complete",
-                        "data": {
-                            "final_report": final_report,
-                            "research_task": research_task,
-                            "notes_count": len(notes),
-                        },
-                    }
-                )
-
-                result = ResearchResponse(
-                    final_report=final_report,
-                    research_task=research_task,
-                    sources_count=len(notes),
-                    notes=notes,
-                    thread_id=thread_id,
-                )
-            else:
-                await cls._update_status(thread_id, "failed", 0.0, "Нет результатов")
-                result = ResearchResponse(
-                    final_report="Исследование не дало результатов",
-                    research_task="",
-                    sources_count=0,
-                    notes=[],
-                    thread_id=thread_id,
-                )
+            state_snapshot = await deep_research_agent.aget_state(session.thread_config)
+            should_close = await cls._handle_completion(session, state_snapshot.values)
 
         except Exception as e:
-            logger.exception(f"Ошибка исследования {thread_id}: {e}")
-            await cls._update_status(thread_id, "failed", 0.0, f"Ошибка: {e}")
-            await emit_event({"event_type": "error", "data": {"error": str(e)}})
+            logger.error(f"Error in session {session.session_id}: {e}", exc_info=True)
+            await session.send_event("error", {"error": str(e)})
+        finally:
+            if should_close:
+                await session.close()
+                cls.remove_session(session.session_id)
+            if should_close:
+                await session.close()
+                cls.remove_session(session.session_id)
 
-            result = ResearchResponse(
-                final_report=f"Ошибка исследования: {e}",
-                research_task="",
-                sources_count=0,
-                notes=[],
-                thread_id=thread_id,
+    @classmethod
+    async def continue_research(cls, session: ResearchSession, message: str):
+        """Continue research after clarification."""
+        should_close = True
+        try:
+            await session.send_event(
+                "research_continued",
+                {
+                    "message_received": message,
+                },
             )
 
-        finally:
-            if queue:
-                await queue.put(None)
+            async for chunk in deep_research_agent.astream(
+                {"messages": [HumanMessage(content=message)]},
+                config=session.thread_config,
+                stream_mode="updates",
+            ):
+                if not session.is_active:
+                    break
 
-        return result
+                for node_name, state_update in chunk.items():
+                    await cls._handle_node_update(session, node_name, state_update)
+
+            state_snapshot = await deep_research_agent.aget_state(session.thread_config)
+            should_close = await cls._handle_completion(session, state_snapshot.values)
+
+        except Exception as e:
+            logger.error(f"Error continuing session {session.session_id}: {e}", exc_info=True)
+            await session.send_event("error", {"error": str(e)})
+        finally:
+            if should_close:
+                await session.close()
+                cls.remove_session(session.session_id)
+
+    @classmethod
+    async def _handle_node_update(cls, session: ResearchSession, node_name: str, state_update: dict | None):
+        """Handle updates from a graph node."""
+        await session.send_event("node_started", {"node": node_name})
+
+        if state_update is None:
+            state_update = {}
+
+        if node_name == "write_research_brief":
+            session.todo_manager = state_update.get("todo_manager")
+            research_brief = state_update.get("research_brief", "")
+            await session.send_event(
+                "research_brief_created",
+                {
+                    "research_brief": research_brief,
+                },
+            )
+
+        if node_name == "execute_tasks":
+            notes = state_update.get("notes", [])
+            if notes:
+                await session.send_event(
+                    "task_results",
+                    {
+                        "results_count": len(notes),
+                        "latest_result": notes[-1][:500] if notes else "",
+                    },
+                )
+
+        if node_name in ["plan_research", "execute_tasks", "process_results", "reflect_on_tasks"]:
+            await cls._send_research_progress(session, node_name, state_update)
+
+        await session.send_event("node_completed", {"node": node_name})
+
+    @classmethod
+    async def _send_research_progress(cls, session: ResearchSession, node_name: str, state_update: dict):
+        """Send research progress updates."""
+        todo_manager = state_update.get("todo_manager") or session.todo_manager
+        if not todo_manager:
+            return
+
+        pending = todo_manager.get_pending_tasks()
+        completed = todo_manager.get_completed_tasks()
+        iterations = state_update.get("research_iterations", 0)
+
+        await session.send_event(
+            "research_progress",
+            {
+                "node": node_name,
+                "pending_tasks": len(pending),
+                "completed_tasks": len(completed),
+                "research_iterations": iterations,
+            },
+        )
+
+    @classmethod
+    async def _handle_completion(cls, session: ResearchSession, final_state: dict) -> bool:
+        """Handle graph completion.
+
+        Returns:
+            True if session should be closed, False if waiting for clarification
+        """
+        logger.info(f"Handling completion for session {session.session_id}")
+        logger.info(f"Final state keys: {list(final_state.keys())}")
+        logger.info(f"Has final_report: {bool(final_state.get('final_report'))}")
+
+        if not final_state.get("final_report"):
+            messages = final_state.get("messages", [])
+            logger.info(f"No final_report. Messages count: {len(messages)}")
+            if messages and hasattr(messages[-1], "content"):
+                questions = messages[-1].content
+                logger.info(
+                    f"Clarification needed. Questions: {questions[:100] if len(questions) > 100 else questions}"
+                )
+                await session.send_event(
+                    "clarification_needed",
+                    {
+                        "questions": questions,
+                        "session_id": session.session_id,
+                    },
+                )
+                logger.info(f"Session {session.session_id} kept alive for clarification")
+                return False
+            else:
+                logger.warning("No messages or last message has no content")
+
+        final_report = final_state.get("final_report", "")
+        iterations = final_state.get("research_iterations", 0)
+
+        logger.info(f"Research complete for session {session.session_id}")
+
+        await session.send_event(
+            "research_complete",
+            {
+                "final_report": final_report,
+                "research_iterations": iterations,
+            },
+        )
+        return True

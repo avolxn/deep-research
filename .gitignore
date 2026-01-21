@@ -70,6 +70,7 @@ data/
 # Logs
 *.log
 logs/
+backend_logs.txt
 
 # OS
 .DS_Store
