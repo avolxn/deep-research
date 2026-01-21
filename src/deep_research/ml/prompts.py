@@ -42,7 +42,7 @@ For the verification message when no clarification is needed:
 """
 
 
-WRITE_RESEARCH_BRIEF_PROMPT = """You will be given a set of messages that have been exchanged so far between yourself and the user. 
+WRITE_RESEARCH_BRIEF_PROMPT = """You will be given a set of messages that have been exchanged so far between yourself and the user.
 Your job is to translate these messages into a more detailed and concrete research question that will be used to guide the research.
 
 The messages that have been exchanged so far between yourself and the user are:
@@ -224,7 +224,7 @@ Make sure that your sections are cohesive, and make sense for the reader.
 For each section of the report, do the following:
 - Use simple, clear language
 - Use ## for section title (Markdown format) for each section of the report
-- Do NOT ever refer to yourself as the writer of the report. This should be a professional report without any self-referential language. 
+- Do NOT ever refer to yourself as the writer of the report. This should be a professional report without any self-referential language.
 - Do not say what you are doing in the report. Just write the report without any commentary from yourself.
 - Each section should be as long as necessary to deeply answer the question with the information you have gathered. It is expected that sections will be fairly long and verbose. You are writing a deep research report, and users will expect a thorough answer.
 - Use bullet points to list out information when appropriate, but by default, write in paragraph form.
@@ -297,7 +297,7 @@ Example 2 (for a scientific article):
 ```json
 {{
    "summary": "A new study published in Nature Climate Change reveals that global sea levels are rising faster than previously thought. Researchers analyzed satellite data from 1993 to 2022 and found that the rate of sea-level rise has accelerated by 0.08 mm/year² over the past three decades. This acceleration is primarily attributed to melting ice sheets in Greenland and Antarctica. The study projects that if current trends continue, global sea levels could rise by up to 2 meters by 2100, posing significant risks to coastal communities worldwide.",
-   "key_excerpts": "Our findings indicate a clear acceleration in sea-level rise, which has significant implications for coastal planning and adaptation strategies, lead author Dr. Emily Brown stated. The rate of ice sheet melt in Greenland and Antarctica has tripled since the 1990s, the study reports. Without immediate and substantial reductions in greenhouse gas emissions, we are looking at potentially catastrophic sea-level rise by the end of this century, warned co-author Professor Michael Green."  
+   "key_excerpts": "Our findings indicate a clear acceleration in sea-level rise, which has significant implications for coastal planning and adaptation strategies, lead author Dr. Emily Brown stated. The rate of ice sheet melt in Greenland and Antarctica has tripled since the 1990s, the study reports. Without immediate and substantial reductions in greenhouse gas emissions, we are looking at potentially catastrophic sea-level rise by the end of this century, warned co-author Professor Michael Green."
 }}
 ```
 
@@ -318,7 +318,7 @@ Create 3-5 initial research tasks that break down this query into actionable res
 
 Focus on:
 1. Understanding the core topic
-2. Gathering comprehensive information 
+2. Gathering comprehensive information
 3. Identifying key aspects to explore
 4. Building foundational knowledge
 
