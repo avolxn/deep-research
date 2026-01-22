@@ -360,7 +360,7 @@ def _process_new_tasks(todo_manager: ResearchTodoManager, todo_updates: TodoUpda
     for i, new_task in enumerate(todo_updates.add_tasks):
         priority = SOURCE_PRIORITY[new_task.source]
 
-        logger.debug(f"Processing new task {i+1}/{len(todo_updates.add_tasks)}: {new_task.description[:60]}")
+        logger.debug(f"Processing new task {i + 1}/{len(todo_updates.add_tasks)}: {new_task.description[:60]}")
         task_id = todo_manager.create_task(
             description=new_task.description,
             priority=priority,

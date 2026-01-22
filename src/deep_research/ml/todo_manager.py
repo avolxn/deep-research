@@ -100,7 +100,7 @@ class ResearchTodoManager:
         response = await structured_llm.ainvoke([HumanMessage(content=planning_prompt)])
 
         for i, task_item in enumerate(response.tasks):
-            task_id = f"initial_{i+1}_{str(uuid.uuid4())[:8]}"
+            task_id = f"initial_{i + 1}_{str(uuid.uuid4())[:8]}"
             task = Task(
                 id=task_id,
                 description=task_item.description,
