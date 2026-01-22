@@ -114,7 +114,7 @@ Evaluate on [deep_research_bench](https://github.com/Ayanami0730/deep_research_b
 
 ```bash
 # Setup (one time)
-cd .. && git clone https://github.com/Ayanami0730/deep_research_bench.git && cd deep-research
+git clone https://github.com/Ayanami0730/deep_research_bench.git
 
 # Run evaluation
 cd evaluation && ./run.sh
@@ -141,7 +141,7 @@ python process_results.py --input results/deep_research_results.jsonl
 python evaluate_benchmark.py --evaluator gpt-oss-120b
 ```
 
-Results: `../deep_research_bench/results/race/deep-research/`
+Results: `deep_research_bench/results/race/deep-research/`
 
 ## 🛠️ Development
 

@@ -31,7 +31,7 @@ def main():
         "--output-dir",
         "-o",
         type=str,
-        default="../deep_research_bench/data/test_data/raw_data",
+        default="deep_research_bench/data/test_data/raw_data",
         help="Output directory for results file",
     )
 
@@ -90,7 +90,7 @@ def main():
 
     logger.info(f"Results saved to: {output_file}")
     logger.info("\nNext steps:")
-    logger.info("  cd ../deep_research_bench")
+    logger.info("  cd deep_research_bench")
     logger.info(f"  python deepresearch_bench_race.py {args.model_name}")
 
     return 0

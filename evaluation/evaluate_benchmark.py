@@ -13,7 +13,7 @@ from pathlib import Path
 
 script_dir = Path(__file__).parent
 deep_research_dir = script_dir.parent
-benchmark_dir = deep_research_dir.parent / "deep_research_bench"
+benchmark_dir = deep_research_dir / "deep_research_bench"
 sys.path.insert(0, str(deep_research_dir))
 sys.path.insert(0, str(benchmark_dir))
 
