@@ -1,135 +1,161 @@
 # 🔬 Deep Research
 
-**Deep Research** — мультиагентная система для проведения глубоких исследований с real-time стримингом прогресса. Использует Yandex GPT и Tavily Search для анализа и структурирования информации.
+Multi-agent research system with real-time streaming, adaptive planning, and interactive steering.
 
-## 🚀 Основные функции
+## 🎯 Key Features
 
-- **🔍 Уточнение** — анализирует запросы, задаёт уточняющие вопросы, формирует исследовательское задание
-- **🔄 Координационный агент** — руководит под-агентами, планирует стратегию, контролирует качество данных
-- **🌐 Веб-исследования** — поиск в интернете, анализ и суммаризация веб-страниц
-- **📊 Структурированная отчётность** — Markdown отчёты с цитированием источников
-- **⚡ Real-time стриминг** — SSE эндпоинты для отслеживания прогресса исследования в реальном времени
+- **🔍 Interactive Clarification** — Analyzes queries, asks clarifying questions via SSE stream
+- **📋 Adaptive Planning** — TODO manager with LLM-driven planning: query decomposition, prioritization, automatic task updates
+- **🔄 Iterative Reflection** — Dynamic plan updates after each iteration with task addition/cancellation
+- **💬 Real-time Steering** — Guide ongoing research by sending messages during execution
+- **🌐 Parallel Research** — Concurrent search and analysis across multiple sources
+- **📊 Structured Reports** — Final report generation with source citations
+- **⚡ Real-time Streaming** — Progress tracking via Server-Sent Events
 
-## 📦 Установка
+## 🏗️ Architecture
 
-### Предварительные требования
+### Multi-Agent Graph
 
-- **Python 3.11+** и **Poetry** (локальная установка)
-- **Docker и Docker Compose** (контейнеризация)
+**Phase 1: Clarification and Planning**
+- `clarify_with_user` — Query analysis, asks clarifying questions if needed
+- `write_research_brief` — Creates research brief and initializes TODO manager
+
+**Phase 2: Iterative Research Loop**
+1. `plan_research` — Selects tasks from TODO for execution
+2. `execute_tasks` — Parallel execution of research tasks
+3. `process_results` — Analyzes results, checks completion conditions
+4. `reflect_on_tasks` — Reflects on findings, updates plan (add/cancel tasks)
+
+Loop continues while there are pending tasks or until iteration limit reached.
+
+**Phase 3: Finalization**
+- `generate_report` — Creates final report with citations
+
+### Key Components
+
+- **TODO Manager** — LLM-driven task planning with automatic updates based on findings
+- **Research Subgraph** — Parallel web search via Tavily + content summarization
+- **Reflection Mechanism** — Analyzes findings and adjusts research direction
+- **Steering System** — User can guide research in real-time via messages
+
+## ⚡ Quick Start
 
 ```bash
-git clone https://github.com/avolxn/deep-research.git
+# Clone and setup
+git clone https://github.com/yourusername/deep-research.git
 cd deep-research
-cp .env.example .env
+cp example.env .env
+
+# Configure API keys in .env (see Configuration below)
+# Install and run
+pip install -e .
+python main.py
 ```
 
-### Настройка `.env`
+**API Documentation:** http://localhost:8000/docs
+
+## 🔑 Configuration
+
+Edit `.env` with your API keys:
+
+**Required:**
+- `YANDEX_GPT_API_KEY`, `YANDEX_GPT_FOLDER_ID` - Get from [Yandex Cloud Console](https://console.yandex.cloud/)
+- `TAVILY_API_KEY` - Get from [Tavily](https://tavily.com/)
+
+**Optional:**
+- `LANGSMITH_API_KEY` - Get from [LangSmith](https://smith.langchain.com/) for LLM call tracing 
+- `LANGSMITH_PROJECT` - Project name (default: `deep-research`)
+
+<details>
+<summary>📝 Example .env file</summary>
 
 ```env
-# Yandex GPT
-AGENT_YANDEX_GPT_API_KEY=your_api_key
-AGENT_YANDEX_GPT_FOLDER_ID=your_folder_id
+# YandexGPT
+YANDEX_GPT_API_KEY=your_api_key
+YANDEX_GPT_FOLDER_ID=your_folder_id
 
 # Tavily Search
-AGENT_TAVILY_API_KEY=your_tavily_key
+TAVILY_API_KEY=your_tavily_key
+
+# LangSmith Tracing (optional)
+LANGSMITH_TRACING=true
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+LANGSMITH_API_KEY=your_langsmith_key
+LANGSMITH_PROJECT=deep-research
 ```
-
-## 🔑 Получение API ключей
-
-### Yandex GPT
-
-1. Создайте сервисный аккаунт в [Yandex Cloud Console](https://console.yandex.cloud/)
-2. Получите API ключ и Folder ID
-3. Добавьте в `.env`
-
-### Tavily API
-
-1. Зарегистрируйтесь на [Tavily](https://tavily.com/)
-2. Получите API ключ в личном кабинете
-
-## ▶️ Запуск
-
-### 🐳 Docker
-
-```bash
-docker-compose up -d
-docker-compose logs -f api
-```
-
-### 🧪 Poetry (локально)
-
-```bash
-poetry install
-poetry run uvicorn deep_research.app:app --reload
-```
+</details>
 
 ## 💻 API
 
-- **Base URL:** `http://localhost:8000`
-- **Swagger UI:** `http://localhost:8000/docs`
+**Base URL:** `http://localhost:8000`  
+**Interactive Docs:** http://localhost:8000/docs
 
-### Эндпоинты
+### Main Endpoints
 
-| Метод | Путь                           | Описание                                          |
-| ---------- | ---------------------------------- | --------------------------------------------------------- |
-| `POST`   | `/research`                      | Создать сессию исследования      |
-| `GET`    | `/research/{id}/stream`          | **SSE** стриминг прогресса         |
-| `GET`    | `/research/{id}`                 | Получить результат                       |
-| `POST`   | `/research/{id}/continue`        | Ответить на уточняющие вопросы |
-| `POST`   | `/research/{id}/continue/stream` | **SSE** стриминг продолжения     |
-| `GET`    | `/research`                      | Список всех исследований            |
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/research` | Start new research session |
+| `GET` | `/stream/{session_id}` | SSE stream for real-time updates |
+| `POST` | `/message` | Send steering message or answer clarification |
+| `GET` | `/plan/{session_id}` | Get current research plan (TODO list) |
+| `GET` | `/status/{session_id}` | Get research status and progress |
 
-### SSE события
+### Configuration
 
-| Событие      | Описание                                                         |
-| ------------------- | ------------------------------------------------------------------------ |
-| `status`          | Изменение статуса исследования               |
-| `research_result` | Промежуточные результаты исследования |
-| `clarification`   | Уточняющий вопрос от агента                      |
-| `report`          | Финальный отчёт                                            |
-| `done`            | Исследование завершено                              |
-| `error`           | Ошибка                                                             |
+Edit `src/deep_research/ml/config.py`:
+- `MAX_RESEARCHER_ITERATIONS = 6` — Maximum research iterations
+- `MAX_TASKS_PER_ITERATION = 5` — Tasks per iteration
+- `MAX_CONCURRENT_RESEARCH_UNITS = 3` — Parallel tasks
+- `MIN_CONTENT_LENGTH = 100` — Minimum content length for acceptance
 
-## 📷 Архитектура
+## 📊 Benchmarking
 
-![Архитектура системы](docs/graph.png)
+Evaluate on [deep_research_bench](https://github.com/Ayanami0730/deep_research_bench):
 
-## 🛠️ Технологический стек
+```bash
+# Setup (one time)
+git clone https://github.com/Ayanami0730/deep_research_bench.git
 
-| Категория       | Технологии                           |
-| ------------------------ | ---------------------------------------------- |
-| **ML**             | LangGraph, LangChain, Yandex Cloud, Tavily     |
-| **Backend**        | FastAPI, SQLAlchemy, PostgreSQL, SSE-Starlette |
-| **Infrastructure** | Docker, Poetry                                 |
+# Run evaluation
+cd evaluation && ./run.sh
 
-## 🏗️ Структура проекта
+# Test on 10 queries
+./run.sh --limit 10
 
-```
-deep-research/
-├── src/deep_research/
-│   ├── agent/
-│   │   ├── graph.py              # Основной граф LangGraph
-│   │   ├── supervisor_subgraph.py
-│   │   ├── researcher_subgraph.py
-│   │   ├── state.py
-│   │   ├── tools.py
-│   │   ├── prompts.py
-│   │   ├── config.py
-│   │   └── utils.py
-│   ├── app.py                    # FastAPI приложение
-│   ├── router.py                 # API эндпоинты
-│   ├── service.py                # Бизнес-логика + стриминг
-│   ├── models.py                 # SQLAlchemy модели
-│   ├── schemas.py                # Pydantic схемы
-│   ├── database.py
-│   └── config.py
-├── docs/
-├── docker-compose.yml
-├── Dockerfile
-├── pyproject.toml
-└── .env.example
+# Use custom evaluator
+./run.sh --evaluator gpt-oss-120b
+
+# Resume after crash
+./run.sh --resume
 ```
 
-## 📄 Лицензия
+**Manual steps:**
+```bash
+# 1. Generate research
+python run_benchmark.py --limit 10
 
-MIT — см. [LICENSE](LICENSE)
+# 2. Convert format
+python process_results.py --input results/deep_research_results.jsonl
+
+# 3. Evaluate
+python evaluate_benchmark.py --evaluator gpt-oss-120b
+```
+
+Results: `deep_research_bench/results/race/deep-research/`
+
+## 🛠️ Development
+
+```bash
+# Run with auto-reload
+python main.py
+
+# View logs
+tail -f backend_logs.txt
+
+# Enable LangSmith tracing
+export LANGSMITH_TRACING=true
+```
+
+## 📄 License
+
+MIT — see [LICENSE](LICENSE)

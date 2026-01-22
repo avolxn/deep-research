@@ -5,22 +5,29 @@ from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 
-from deep_research.agent.config import config
-from deep_research.agent.prompts import (
+from deep_research.ml.config import config
+from deep_research.ml.prompts import (
     COMPRESS_RESEARCH_HUMAN_MESSAGE,
     COMPRESS_RESEARCH_SYSTEM_PROMPT,
     RESEARCH_SYSTEM_PROMPT,
 )
-from deep_research.agent.state import ResearcherOutputState, ResearcherState
-from deep_research.agent.tools import research_complete_tool, think_tool, web_search_tool
-from deep_research.agent.utils import get_llm
+from deep_research.ml.state import ResearcherState
+from deep_research.ml.tools import research_complete_tool, think_tool, web_search_tool
+from deep_research.ml.utils import get_llm
 
 RESEARCHER_TOOLS = [web_search_tool, think_tool, research_complete_tool]
 
 
 async def researcher(state: ResearcherState) -> Command[Literal["researcher_tools"]]:
-    """Исследователь, проводящий сфокусированное исследование по конкретным темам."""
-    researcher_messages = state.get("researcher_messages", [])
+    """Researcher conducting focused research on specific topics.
+
+    Args:
+        state: Current researcher state with messages and research topic
+
+    Returns:
+        Command to proceed to researcher_tools
+    """
+    researcher_messages = state["researcher_messages"]
 
     system_prompt = RESEARCH_SYSTEM_PROMPT.format(date=datetime.now().strftime("%c"))
     messages = [SystemMessage(content=system_prompt)] + researcher_messages
@@ -39,8 +46,15 @@ async def researcher(state: ResearcherState) -> Command[Literal["researcher_tool
 
 
 async def researcher_tools(state: ResearcherState) -> Command[Literal["researcher", "compress_research"]]:
-    """Выполняет инструменты исследователя с проверкой лимита итераций."""
-    researcher_messages = state.get("researcher_messages", [])
+    """Executes researcher tools with iteration limit checking.
+
+    Args:
+        state: Current researcher state with messages and iteration count
+
+    Returns:
+        Command to either continue research or compress results
+    """
+    researcher_messages = state["researcher_messages"]
     tool_call_iterations = state.get("tool_call_iterations", 0)
     last_message = researcher_messages[-1]
     tool_calls = last_message.tool_calls if hasattr(last_message, "tool_calls") else []
@@ -64,7 +78,7 @@ async def researcher_tools(state: ResearcherState) -> Command[Literal["researche
             result = await web_search_tool.ainvoke(tool_call["args"])
             content = result if isinstance(result, str) else str(result)
         except Exception as e:
-            content = f"Ошибка при выполнении поиска: {e}"
+            content = f"Error executing search: {e}"
 
         all_tool_messages.append(
             ToolMessage(
@@ -80,15 +94,22 @@ async def researcher_tools(state: ResearcherState) -> Command[Literal["researche
     )
 
 
-async def compress_research(state: ResearcherState) -> ResearcherOutputState:
-    """Сжимает и синтезирует результаты исследования в краткое, структурированное резюме."""
-    researcher_messages = state.get("researcher_messages", [])
+async def compress_research(state: ResearcherState) -> ResearcherState:
+    """Compresses and synthesizes research findings into a concise, structured summary.
+
+    Args:
+        state: Current researcher state with messages and research topic
+
+    Returns:
+        Updated state with compressed_research and raw_notes
+    """
+    researcher_messages = state["researcher_messages"]
 
     system_prompt = COMPRESS_RESEARCH_SYSTEM_PROMPT.format(date=datetime.now().strftime("%c"))
     researcher_messages_with_instruction = researcher_messages + [HumanMessage(content=COMPRESS_RESEARCH_HUMAN_MESSAGE)]
     messages = [SystemMessage(content=system_prompt)] + researcher_messages_with_instruction
 
-    llm = get_llm(**config.compression_model.model_dump())
+    llm = get_llm(**config.summarization_model.model_dump())
     response = await llm.ainvoke(messages)
     compressed_research = response.content
 
@@ -100,7 +121,7 @@ async def compress_research(state: ResearcherState) -> ResearcherOutputState:
     }
 
 
-workflow = StateGraph(ResearcherState, output=ResearcherOutputState)
+workflow = StateGraph(ResearcherState)
 
 workflow.add_node("researcher", researcher)
 workflow.add_node("researcher_tools", researcher_tools)
