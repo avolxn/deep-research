@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_llm(
-    model_name: str = "yandexgpt/rc",
+    model_name: str = "gpt-oss-120b",
     temperature: float = 0.7,
     max_tokens: int = None,
 ) -> ChatOpenAI:

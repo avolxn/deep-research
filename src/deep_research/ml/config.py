@@ -3,22 +3,22 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ResearcherModelConfig(BaseModel):
-    model_name: str = "yandexgpt/rc"
+    model_name: str = "gpt-oss-120b"
     temperature: float = 0.3
 
 
 class SummarizationModelConfig(BaseModel):
-    model_name: str = "yandexgpt/rc"
+    model_name: str = "gpt-oss-120b"
     temperature: float = 0.2
 
 
 class ReportModelConfig(BaseModel):
-    model_name: str = "yandexgpt/rc"
+    model_name: str = "gpt-oss-120b"
     temperature: float = 0.5
 
 
 class SupervisorModelConfig(BaseModel):
-    model_name: str = "yandexgpt/rc"
+    model_name: str = "gpt-oss-120b"
     temperature: float = 0.3
 
 
